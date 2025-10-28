@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Comment Board</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #7e22ce, #000000);
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #commentBox {
+      display: flex;
+      justify-content: center;
+      margin: 20px;
+    }
+
+    #commentInput {
+      width: 300px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-right: 10px;
+    }
+
+    #submitBtn {
+      background-color: #9333ea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+
+    #submitBtn:hover {
+      background-color: #a855f7;
+    }
+
+    #comments {
+      max-width: 600px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .comment {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+    }
+
+    .comment button {
+      background: transparent;
+      border: none;
+      color: red;
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+
+    .comment button:hover {
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>💬 discord from temu</h1>
+
+  <div id="commentBox">
+    <input type="text" id="commentInput" placeholder="Type your comment...">
+    <button id="submitBtn">Send</button>
+  </div>
+
+  <div id="comments"></div>
+
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
+      authDomain: "sigma-website-f2426.firebaseapp.com",
+      databaseURL: "https://sigma-website-f2426-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "sigma-website-f2426",
+      storageBucket: "sigma-website-f2426.firebasestorage.app",
+      messagingSenderId: "1030464935755",
+      appId: "1:1030464935755:web:5784435e0cfe18ba30bace",
+      measurementId: "G-1V1CJC9MHG"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const analytics = getAnalytics(app);
+
+    // === USER SETUP ===
+    let username = localStorage.getItem("username");
+    let userId = localStorage.getItem("userId");
+
+    if (!username) {
+      username = prompt("Enter your username:");
+      localStorage.setItem("username", username);
+    }
+
+    if (!userId) {
+      userId = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("userId", userId);
+    }
+
+    // Random color per user
+    let userColor = localStorage.getItem("userColor");
+    if (!userColor) {
+      const colors = ["#ffb6c1", "#87cefa", "#90ee90", "#ffa07a", "#f5a623", "#e0bbff", "#7fffd4"];
+      userColor = colors[Math.floor(Math.random() * colors.length)];
+      localStorage.setItem("userColor", userColor);
+    }
+
+    const commentsRef = ref(db, "comments");
+
+    // === SEND COMMENT ===
+    document.getElementById("submitBtn").onclick = () => {
+      const text = document.getElementById("commentInput").value.trim();
+      if (text !== "") {
+        push(commentsRef, {
+          user: username,
+          userId: userId,
+          text: text,
+          color: userColor,
+          time: Date.now()
+        });
+        document.getElementById("commentInput").value = "";
+      }
+    };
+
+    // === DISPLAY COMMENTS ===
+    onValue(commentsRef, (snapshot) => {
+      const container = document.getElementById("comments");
+      container.innerHTML = "";
+      snapshot.forEach((childSnapshot) => {
+        const data = childSnapshot.val();
+        const key = childSnapshot.key;
+
+        const commentDiv = document.createElement("div");
+        commentDiv.className = "comment";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = data.user + ": ";
+        nameSpan.style.color = data.color || "white";
+        commentDiv.appendChild(nameSpan);
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = data.text;
+        commentDiv.appendChild(textSpan);
+
+        // 🗑️ Delete button for your own comments
+        if (data.userId === userId) {
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "🗑️";
+          delBtn.onclick = () => {
+            remove(ref(db, "comments/" + key));
+          };
+          commentDiv.appendChild(delBtn);
+        }
+
+        container.appendChild(commentDiv);
+      });
+    });
+  </script>
+
+</body>
+</html>
