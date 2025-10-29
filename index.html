@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Sigma Chat — Rooms + Reactions</title>
+<title>Sigma Chat — Custom Emoji Reactions</title>
 <style>
 :root{--accent:#9c27b0}
 body{
@@ -22,13 +22,15 @@ button:hover{opacity:.95}
 .username{font-weight:700}
 .meta{font-size:12px; color:#ddd; margin-left:8px}
 .deleteBtn{position:absolute; right:10px; top:10px; background:transparent; border:none; color:#ff7675; cursor:pointer}
+.reactionsBtn{position:absolute; top:10px; right:70px; background:transparent; border:none; color:#fff; cursor:pointer}
 .small{font-size:13px; color:#ddd}
+.emojiInput{width:40px; padding:2px 6px; border-radius:6px; border:none; background:rgba(255,255,255,.1); color:#fff; text-align:center}
 @media (max-width:520px){ .topbar{flex-direction:column; align-items:stretch} .card{width:100%} #comments{max-height:300px} }
 </style>
 </head>
 <body>
 
-<h1>💬 Sigma Chat — Rooms + Reactions</h1>
+<h1>💬 Sigma Chat — Custom Emoji Reactions</h1>
 
 <div class="topbar">
   <!-- Room selection -->
@@ -213,6 +215,8 @@ function switchRoom(id){
       const timeText = c.time?new Date(c.time).toLocaleString():'';
       div.innerHTML=`<div><span class="username" style="color:${c.color||'#fff'}">${escapeHtml(c.username)}</span> <span class="meta">${timeText}</span></div>
                       <div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
+
+      // Delete button
       if(c.userId===userId){
         const del=document.createElement('button');
         del.className='deleteBtn';
@@ -221,39 +225,58 @@ function switchRoom(id){
         div.appendChild(del);
       }
 
-      // Emoji reactions
+      // Reaction bar hidden by default
       const reactionBar = document.createElement('div');
       reactionBar.style.marginTop='6px';
-      reactionBar.style.display='flex';
+      reactionBar.style.display='none';
+      reactionBar.style.flexWrap='wrap';
       reactionBar.style.gap='6px';
-      const emojis = ['👍','❤️','😂','😮','😢'];
+      reactionBar.style.alignItems='center';
 
-      emojis.forEach(emoji=>{
-        const btn = document.createElement('button');
-        btn.style.background='transparent';
-        btn.style.border='none';
-        btn.style.color='#fff';
-        btn.style.cursor='pointer';
-        btn.style.fontSize='16px';
-        const countSpan = document.createElement('span');
-        countSpan.style.marginLeft='3px';
-        countSpan.style.fontSize='13px';
-        countSpan.style.color='#ddd';
-        const count = c.reactions && c.reactions[emoji]?Object.keys(c.reactions[emoji]).length:0;
-        countSpan.textContent = count;
-        btn.textContent = emoji;
-        btn.appendChild(countSpan);
+      // Load existing reactions
+      if(c.reactions){
+        Object.keys(c.reactions).forEach(emoji=>{
+          const count = Object.keys(c.reactions[emoji]).length;
+          const btn = document.createElement('button');
+          btn.style.background='transparent';
+          btn.style.border='none';
+          btn.style.color='#fff';
+          btn.style.cursor='pointer';
+          btn.style.fontSize='16px';
+          btn.textContent = emoji + ' ' + count;
+          btn.onclick = ()=>{
+            const reactionRef = ref(db, `rooms/${id}/comments/${key}/reactions/${emoji}/${userId}`);
+            get(reactionRef).then(snap=>{
+              if(snap.exists()) remove(reactionRef);
+              else push(ref(db, `rooms/${id}/comments/${key}/reactions/${emoji}/${userId}`), true);
+            });
+          };
+          reactionBar.appendChild(btn);
+        });
+      }
 
-        btn.onclick=()=>{
-          const reactionRef = ref(db, `rooms/${id}/comments/${key}/reactions/${emoji}/${userId}`);
-          get(reactionRef).then(snap=>{
-            if(snap.exists()) remove(reactionRef);
-            else push(ref(db, `rooms/${id}/comments/${key}/reactions/${emoji}/${userId}`), true);
-          });
-        };
+      // Input for custom emoji
+      const input = document.createElement('input');
+      input.type='text';
+      input.className='emojiInput';
+      input.placeholder='➕';
+      input.maxLength=2;
+      input.onkeydown = e=>{
+        if(e.key==='Enter'){
+          const emoji = input.value.trim();
+          if(!emoji) return;
+          push(ref(db, `rooms/${id}/comments/${key}/reactions/${emoji}/${userId}`), true);
+          input.value='';
+        }
+      };
+      reactionBar.appendChild(input);
 
-        reactionBar.appendChild(btn);
-      });
+      // Toggle button
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className='reactionsBtn';
+      toggleBtn.textContent='😊 Reactions';
+      toggleBtn.onclick = () => { reactionBar.style.display = reactionBar.style.display==='none' ? 'flex':'none'; };
+      div.appendChild(toggleBtn);
 
       div.appendChild(reactionBar);
       commentsDiv.appendChild(div);
@@ -293,4 +316,4 @@ function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;
 
 </script>
 </body>
-</html>
+      </html>
