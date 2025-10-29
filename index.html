@@ -17,6 +17,31 @@
       margin-top: 20px;
     }
 
+    #topBar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    #usernameDisplay {
+      font-size: 16px;
+      color: #ccc;
+    }
+
+    #changeNameBtn {
+      background: #9333ea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    #changeNameBtn:hover {
+      background: #a855f7;
+    }
+
     #commentBox {
       display: flex;
       justify-content: center;
@@ -75,7 +100,12 @@
 </head>
 <body>
 
-  <h1>💬 discord from temu</h1>
+  <h1>💬 Real-Time Comments</h1>
+
+  <div id="topBar">
+    <div id="usernameDisplay"></div>
+    <button id="changeNameBtn">Change Username</button>
+  </div>
 
   <div id="commentBox">
     <input type="text" id="commentInput" placeholder="Type your comment...">
@@ -85,10 +115,9 @@
   <div id="comments"></div>
 
   <script type="module">
-    // Import Firebase SDKs
+    // Firebase SDK imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
 
     // Firebase configuration
     const firebaseConfig = {
@@ -105,33 +134,45 @@
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const analytics = getAnalytics(app);
 
     // === USER SETUP ===
     let username = localStorage.getItem("username");
     let userId = localStorage.getItem("userId");
+    let userColor = localStorage.getItem("userColor");
 
-    if (!username) {
-      username = prompt("Enter your username:");
-      localStorage.setItem("username", username);
-    }
-
+    // Generate new user info if first time
     if (!userId) {
       userId = Math.random().toString(36).substring(2, 15);
       localStorage.setItem("userId", userId);
     }
 
-    // Random color per user
-    let userColor = localStorage.getItem("userColor");
     if (!userColor) {
       const colors = ["#ffb6c1", "#87cefa", "#90ee90", "#ffa07a", "#f5a623", "#e0bbff", "#7fffd4"];
       userColor = colors[Math.floor(Math.random() * colors.length)];
       localStorage.setItem("userColor", userColor);
     }
 
+    if (!username) {
+      username = prompt("Enter your username:");
+      localStorage.setItem("username", username);
+    }
+
+    document.getElementById("usernameDisplay").textContent = "Logged in as: " + username;
+
+    // Change username button
+    document.getElementById("changeNameBtn").onclick = () => {
+      const newName = prompt("Enter new username:");
+      if (newName && newName.trim() !== "") {
+        username = newName.trim();
+        localStorage.setItem("username", username);
+        document.getElementById("usernameDisplay").textContent = "Logged in as: " + username;
+        alert("Username updated!");
+      }
+    };
+
+    // === COMMENTS ===
     const commentsRef = ref(db, "comments");
 
-    // === SEND COMMENT ===
     document.getElementById("submitBtn").onclick = () => {
       const text = document.getElementById("commentInput").value.trim();
       if (text !== "") {
@@ -146,7 +187,6 @@
       }
     };
 
-    // === DISPLAY COMMENTS ===
     onValue(commentsRef, (snapshot) => {
       const container = document.getElementById("comments");
       container.innerHTML = "";
@@ -166,7 +206,7 @@
         textSpan.textContent = data.text;
         commentDiv.appendChild(textSpan);
 
-        // 🗑️ Delete button for your own comments
+        // Delete button for your own comments
         if (data.userId === userId) {
           const delBtn = document.createElement("button");
           delBtn.textContent = "🗑️";
