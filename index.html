@@ -1,125 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Comment Board</title>
+  <meta charset="utf-8" />
+  <title>Sigma Chat — Rooms</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #7e22ce, #000000);
-      color: white;
-      margin: 0;
-      padding: 0;
+    :root{--accent:#9c27b0}
+    body{
+      margin:0; font-family:Segoe UI,Arial,sans-serif;
+      background: linear-gradient(135deg,#6a0dad,#000);
+      color:white; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px;
     }
-
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    #topBar {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    #usernameDisplay {
-      font-size: 16px;
-      color: #ccc;
-    }
-
-    #changeNameBtn {
-      background: #9333ea;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-
-    #changeNameBtn:hover {
-      background: #a855f7;
-    }
-
-    #commentBox {
-      display: flex;
-      justify-content: center;
-      margin: 20px;
-    }
-
-    #commentInput {
-      width: 300px;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      margin-right: 10px;
-    }
-
-    #submitBtn {
-      background-color: #9333ea;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 15px;
-      cursor: pointer;
-    }
-
-    #submitBtn:hover {
-      background-color: #a855f7;
-    }
-
-    #comments {
-      max-width: 600px;
-      margin: 20px auto;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 15px;
-    }
-
-    .comment {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 8px;
-    }
-
-    .comment button {
-      background: transparent;
-      border: none;
-      color: red;
-      cursor: pointer;
-      font-size: 16px;
-      margin-left: 10px;
-    }
-
-    .comment button:hover {
-      opacity: 0.7;
-    }
+    h1{margin:6px 0 14px; text-shadow:0 0 8px rgba(0,0,0,.4)}
+    .topbar{display:flex;gap:10px; align-items:center; margin-bottom:12px}
+    .card{background:rgba(255,255,255,.06); padding:12px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.5)}
+    #roomsRow{display:flex; gap:8px; align-items:center}
+    select, input[type="text"]{padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,.08); color:white}
+    button{background:var(--accent); color:white; padding:8px 10px; border:none; border-radius:8px; cursor:pointer; font-weight:600}
+    button:hover{opacity:.95}
+    #comments{width:100%; max-width:800px; margin-top:14px; background:rgba(255,255,255,.06); border-radius:10px; padding:12px; max-height:420px; overflow:auto}
+    .comment{background:rgba(0,0,0,.35); padding:10px; border-radius:8px; margin-bottom:8px; position:relative}
+    .username{font-weight:700}
+    .meta{font-size:12px; color:#ddd; margin-left:8px}
+    .deleteBtn{position:absolute; right:10px; top:10px; background:transparent; border:none; color:#ff7675; cursor:pointer}
+    .small{font-size:13px; color:#ddd}
+    .flexrow{display:flex; gap:8px; align-items:center}
+    @media (max-width:520px){ .topbar{flex-direction:column; align-items:stretch} .card{width:100%} #comments{max-height:300px} }
   </style>
 </head>
 <body>
 
-  <h1>💬 Real-Time Comments</h1>
+  <h1>💬 Sigma Chat — Rooms</h1>
 
-  <div id="topBar">
-    <div id="usernameDisplay"></div>
-    <button id="changeNameBtn">Change Username</button>
+  <div class="topbar">
+    <div class="card" id="roomCard">
+      <div id="roomsRow">
+        <label class="small" for="roomsSelect">Room:</label>
+        <select id="roomsSelect">
+          <option value="">— No room selected —</option>
+        </select>
+        <input id="newRoomInput" type="text" placeholder="New room name (e.g. Chat1)">
+        <button id="createRoomBtn">Create room</button>
+      </div>
+      <div class="small" style="margin-top:8px">Active room: <span id="activeRoomName">None</span></div>
+    </div>
+
+    <div class="card" id="userCard">
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+        <div class="small">Name:</div>
+        <input id="usernameInput" type="text" placeholder="Your name">
+        <button id="saveUsernameBtn">Save</button>
+        <button id="changeUsernameBtn">Change</button>
+      </div>
+      <div class="small" style="margin-top:8px">You can change your name anytime. Saved locally.</div>
+    </div>
   </div>
 
-  <div id="commentBox">
-    <input type="text" id="commentInput" placeholder="Type your comment...">
-    <button id="submitBtn">Send</button>
+  <div class="card" style="width:100%; max-width:800px; margin-bottom:8px">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <input id="messageInput" type="text" placeholder="Type a message..." style="flex:1">
+      <button id="sendBtn">Send</button>
+    </div>
+    <div class="small" style="margin-top:8px">Selected room: <strong id="selectedRoomDisplay">—</strong></div>
   </div>
 
-  <div id="comments"></div>
+  <div id="comments" class="card"></div>
 
+  <!-- Firebase + app logic -->
   <script type="module">
-    // Firebase SDK imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+    import { getDatabase, ref, push, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-    // Firebase configuration
+    // ====== Firebase config ======
     const firebaseConfig = {
       apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
       authDomain: "sigma-website-f2426.firebaseapp.com",
@@ -130,96 +81,164 @@
       appId: "1:1030464935755:web:5784435e0cfe18ba30bace",
       measurementId: "G-1V1CJC9MHG"
     };
-
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // === USER SETUP ===
-    let username = localStorage.getItem("username");
-    let userId = localStorage.getItem("userId");
-    let userColor = localStorage.getItem("userColor");
+    // ====== Elements ======
+    const roomsSelect = document.getElementById('roomsSelect');
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    const newRoomInput = document.getElementById('newRoomInput');
+    const activeRoomName = document.getElementById('activeRoomName');
+    const selectedRoomDisplay = document.getElementById('selectedRoomDisplay');
 
-    // Generate new user info if first time
-    if (!userId) {
-      userId = Math.random().toString(36).substring(2, 15);
-      localStorage.setItem("userId", userId);
-    }
+    const usernameInput = document.getElementById('usernameInput');
+    const saveUsernameBtn = document.getElementById('saveUsernameBtn');
+    const changeUsernameBtn = document.getElementById('changeUsernameBtn');
 
-    if (!userColor) {
-      const colors = ["#ffb6c1", "#87cefa", "#90ee90", "#ffa07a", "#f5a623", "#e0bbff", "#7fffd4"];
-      userColor = colors[Math.floor(Math.random() * colors.length)];
-      localStorage.setItem("userColor", userColor);
-    }
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const commentsDiv = document.getElementById('comments');
 
-    if (!username) {
-      username = prompt("Enter your username:");
-      localStorage.setItem("username", username);
-    }
+    // ====== User local data (persistent) ======
+    let username = localStorage.getItem('sigma_username') || '';
+    let userId = localStorage.getItem('sigma_userId');
+    let userColor = localStorage.getItem('sigma_userColor');
 
-    document.getElementById("usernameDisplay").textContent = "Logged in as: " + username;
+    if (!userId) { userId = Math.random().toString(36).slice(2,12); localStorage.setItem('sigma_userId', userId); }
+    if (!userColor) { userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'); localStorage.setItem('sigma_userColor', userColor); }
+    if (username) { usernameInput.value = username; usernameInput.disabled = true; }
 
-    // Change username button
-    document.getElementById("changeNameBtn").onclick = () => {
-      const newName = prompt("Enter new username:");
-      if (newName && newName.trim() !== "") {
-        username = newName.trim();
-        localStorage.setItem("username", username);
-        document.getElementById("usernameDisplay").textContent = "Logged in as: " + username;
-        alert("Username updated!");
-      }
-    };
+    // ====== Rooms handling ======
+    const roomsRef = ref(db, 'rooms');
 
-    // === COMMENTS ===
-    const commentsRef = ref(db, "comments");
+    // Listen for rooms list and update dropdown
+    onValue(roomsRef, (snap) => {
+      const val = snap.val() || {};
+      // Clear select but keep first default option
+      const previous = roomsSelect.value;
+      roomsSelect.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = '— Select a room —';
+      roomsSelect.appendChild(opt0);
 
-    document.getElementById("submitBtn").onclick = () => {
-      const text = document.getElementById("commentInput").value.trim();
-      if (text !== "") {
-        push(commentsRef, {
-          user: username,
-          userId: userId,
-          text: text,
-          color: userColor,
-          time: Date.now()
-        });
-        document.getElementById("commentInput").value = "";
-      }
-    };
-
-    onValue(commentsRef, (snapshot) => {
-      const container = document.getElementById("comments");
-      container.innerHTML = "";
-      snapshot.forEach((childSnapshot) => {
-        const data = childSnapshot.val();
-        const key = childSnapshot.key;
-
-        const commentDiv = document.createElement("div");
-        commentDiv.className = "comment";
-
-        const nameSpan = document.createElement("span");
-        nameSpan.textContent = data.user + ": ";
-        nameSpan.style.color = data.color || "white";
-        commentDiv.appendChild(nameSpan);
-
-        const textSpan = document.createElement("span");
-        textSpan.textContent = data.text;
-        commentDiv.appendChild(textSpan);
-
-        // Delete button for your own comments
-        if (data.userId === userId) {
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "🗑️";
-          delBtn.onclick = () => {
-            remove(ref(db, "comments/" + key));
-          };
-          commentDiv.appendChild(delBtn);
-        }
-
-        container.appendChild(commentDiv);
+      Object.keys(val).forEach(roomId => {
+        const room = val[roomId];
+        const opt = document.createElement('option');
+        opt.value = roomId;
+        opt.textContent = room.name;
+        roomsSelect.appendChild(opt);
       });
-    });
-  </script>
 
+      // try to reselect previous if still available
+      if (previous) roomsSelect.value = previous;
+    });
+
+    // Create new room
+    createRoomBtn.onclick = () => {
+      const name = newRoomInput.value.trim();
+      if (!name) { alert('Type a room name first'); return; }
+      // push new room
+      push(roomsRef, { name: name, time: Date.now() }).then(() => {
+        newRoomInput.value = '';
+      });
+    };
+
+    // Switch rooms
+    let activeRoomId = null;
+    roomsSelect.onchange = () => {
+      const id = roomsSelect.value;
+      if (!id) { activeRoomId = null; selectedRoomDisplay.textContent = '—'; activeRoomName.textContent = 'None'; commentsDiv.innerHTML=''; return; }
+      activeRoomId = id;
+      // Get the room name for display
+      get(child(ref(db), `rooms/${id}`)).then(s => {
+        const r = s.val();
+        activeRoomName.textContent = r ? r.name : id;
+        selectedRoomDisplay.textContent = r ? r.name : id;
+      });
+      // Start listening to comments for this room
+      listenRoomComments(id);
+    };
+
+    // ====== Comments handling ======
+    let commentsListenerCancel = null;
+    function listenRoomComments(roomId) {
+      // stop previous listener by reassigning onValue to new ref (onValue replaces handler reference)
+      const roomCommentsRef = ref(db, `rooms/${roomId}/comments`);
+      // attach listener
+      onValue(roomCommentsRef, (snapshot) => {
+        commentsDiv.innerHTML = '';
+        const data = snapshot.val() || {};
+        // newest at bottom: iterate keys in insertion order
+        Object.keys(data).forEach(key => {
+          const c = data[key];
+          const div = document.createElement('div');
+          div.className = 'comment';
+          // username and time
+          const timeText = c.time ? new Date(c.time).toLocaleString() : '';
+          div.innerHTML = `<div><span class="username" style="color:${c.color||'#fff'}">${escapeHtml(c.username)}</span> <span class="meta">${timeText}</span></div>
+                           <div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
+          // delete for own messages
+          if (c.userId && c.userId === userId) {
+            const del = document.createElement('button');
+            del.className = 'deleteBtn';
+            del.textContent = 'Delete';
+            del.onclick = () => {
+              if (confirm('Delete this message?')) {
+                remove(ref(db, `rooms/${roomId}/comments/${key}`));
+              }
+            };
+            div.appendChild(del);
+          }
+          commentsDiv.appendChild(div);
+        });
+        // scroll to bottom so newest visible
+        commentsDiv.scrollTop = commentsDiv.scrollHeight;
+      });
+    }
+
+    // Send message
+    sendBtn.onclick = () => {
+      if (!activeRoomId) { alert('Pick a room first (or create one)'); return; }
+      const text = messageInput.value.trim();
+      let name = localStorage.getItem('sigma_username') || usernameInput.value.trim();
+      if (!name) { alert('Set your username first'); return; }
+      if (!text) return;
+      const roomCommentsRef = ref(db, `rooms/${activeRoomId}/comments`);
+      push(roomCommentsRef, {
+        username: name,
+        userId: userId,
+        text: text,
+        color: userColor,
+        time: Date.now()
+      }).then(() => { messageInput.value = ''; });
+    };
+
+    // Save username
+    saveUsernameBtn.onclick = () => {
+      const n = usernameInput.value.trim();
+      if (!n) { alert('Type a username'); return; }
+      username = n; localStorage.setItem('sigma_username', username);
+      usernameInput.disabled = true;
+      alert('Username saved');
+    };
+
+    // Change username
+    changeUsernameBtn.onclick = () => {
+      usernameInput.disabled = false;
+      usernameInput.focus();
+      // Do NOT remove userId so delete permissions stay the same; only name changes
+      localStorage.removeItem('sigma_username');
+    };
+
+    // Escape to avoid HTML injection (basic)
+    function escapeHtml(s){
+      if (!s) return '';
+      return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+    }
+
+    // Initial: load rooms once (onValue will keep it updated). Optionally select first room automatically if exists.
+    // (onValue above already updates select).
+  </script>
 </body>
-</html>
+  </html>
