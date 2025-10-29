@@ -17,7 +17,7 @@
     select, input[type="text"]{padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,.08); color:white}
     button{background:var(--accent); color:white; padding:8px 10px; border:none; border-radius:8px; cursor:pointer; font-weight:600}
     button:hover{opacity:.95}
-    #comments{width:100%; max-width:800px; margin-top:14px; background:rgba(255,255,255,.06); border-radius:10px; padding:12px; max-height:420px; overflow:auto}
+    #comments{width:100%; max-width:800px; margin-top:14px; background:rgba(255,255,255,.06); border-radius:10px; padding:12px; max-height:420px; overflow:auto; scroll-behavior: smooth;}
     .comment{background:rgba(0,0,0,.35); padding:10px; border-radius:8px; margin-bottom:8px; position:relative}
     .username{font-weight:700}
     .meta{font-size:12px; color:#ddd; margin-left:8px}
@@ -70,7 +70,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import { getDatabase, ref, push, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-    // ====== Firebase config ======
     const firebaseConfig = {
       apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
       authDomain: "sigma-website-f2426.firebaseapp.com",
@@ -84,7 +83,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ====== Elements ======
     const roomsSelect = document.getElementById('roomsSelect');
     const createRoomBtn = document.getElementById('createRoomBtn');
     const newRoomInput = document.getElementById('newRoomInput');
@@ -99,22 +97,23 @@
     const sendBtn = document.getElementById('sendBtn');
     const commentsDiv = document.getElementById('comments');
 
-    // ====== User local data (persistent) ======
+    // ====== User local data ======
     let username = localStorage.getItem('sigma_username') || '';
     let userId = localStorage.getItem('sigma_userId');
     let userColor = localStorage.getItem('sigma_userColor');
+    let lastRoom = localStorage.getItem('sigma_lastRoom');
 
     if (!userId) { userId = Math.random().toString(36).slice(2,12); localStorage.setItem('sigma_userId', userId); }
     if (!userColor) { userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'); localStorage.setItem('sigma_userColor', userColor); }
     if (username) { usernameInput.value = username; usernameInput.disabled = true; }
 
-    // ====== Rooms handling ======
     const roomsRef = ref(db, 'rooms');
+    let activeRoomId = null;
+    let currentListener = null;
 
-    // Listen for rooms list and update dropdown
-    onValue(roomsRef, (snap) => {
+    // Listen for rooms
+    onValue(roomsRef, snap => {
       const val = snap.val() || {};
-      // Clear select but keep first default option
       const previous = roomsSelect.value;
       roomsSelect.innerHTML = '';
       const opt0 = document.createElement('option');
@@ -130,76 +129,78 @@
         roomsSelect.appendChild(opt);
       });
 
-      // try to reselect previous if still available
-      if (previous) roomsSelect.value = previous;
+      if (lastRoom && val[lastRoom]) {
+        roomsSelect.value = lastRoom;
+        switchRoom(lastRoom);
+      } else if (previous && val[previous]) {
+        roomsSelect.value = previous;
+        switchRoom(previous);
+      }
     });
 
-    // Create new room
+    // Create room
     createRoomBtn.onclick = () => {
       const name = newRoomInput.value.trim();
       if (!name) { alert('Type a room name first'); return; }
-      // push new room
-      push(roomsRef, { name: name, time: Date.now() }).then(() => {
-        newRoomInput.value = '';
+
+      get(roomsRef).then(snap => {
+        const rooms = snap.val() || {};
+        const exists = Object.values(rooms).some(r => r.name.toLowerCase() === name.toLowerCase());
+        if (exists) { alert('Room name already exists'); return; }
+
+        push(roomsRef, { name: name, time: Date.now() }).then(() => {
+          newRoomInput.value = '';
+        });
       });
     };
 
-    // Switch rooms
-    let activeRoomId = null;
     roomsSelect.onchange = () => {
       const id = roomsSelect.value;
-      if (!id) { activeRoomId = null; selectedRoomDisplay.textContent = '—'; activeRoomName.textContent = 'None'; commentsDiv.innerHTML=''; return; }
+      switchRoom(id || null);
+    };
+
+    function switchRoom(id) {
       activeRoomId = id;
-      // Get the room name for display
-      get(child(ref(db), `rooms/${id}`)).then(s => {
-        const r = s.val();
+      if (currentListener) currentListener(); // detach old listener
+      commentsDiv.innerHTML = '';
+      if (!id) {
+        selectedRoomDisplay.textContent = '—';
+        activeRoomName.textContent = 'None';
+        localStorage.removeItem('sigma_lastRoom');
+        return;
+      }
+      localStorage.setItem('sigma_lastRoom', id);
+      get(child(ref(db), `rooms/${id}`)).then(snap => {
+        const r = snap.val();
         activeRoomName.textContent = r ? r.name : id;
         selectedRoomDisplay.textContent = r ? r.name : id;
       });
-      // Start listening to comments for this room
-      listenRoomComments(id);
-    };
-
-    // ====== Comments handling ======
-    let commentsListenerCancel = null;
-    function listenRoomComments(roomId) {
-      // stop previous listener by reassigning onValue to new ref (onValue replaces handler reference)
-      const roomCommentsRef = ref(db, `rooms/${roomId}/comments`);
-      // attach listener
-      onValue(roomCommentsRef, (snapshot) => {
+      const roomCommentsRef = ref(db, `rooms/${id}/comments`);
+      currentListener = onValue(roomCommentsRef, snapshot => {
         commentsDiv.innerHTML = '';
         const data = snapshot.val() || {};
-        // newest at bottom: iterate keys in insertion order
         Object.keys(data).forEach(key => {
           const c = data[key];
           const div = document.createElement('div');
           div.className = 'comment';
-          // username and time
           const timeText = c.time ? new Date(c.time).toLocaleString() : '';
           div.innerHTML = `<div><span class="username" style="color:${c.color||'#fff'}">${escapeHtml(c.username)}</span> <span class="meta">${timeText}</span></div>
                            <div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
-          // delete for own messages
           if (c.userId && c.userId === userId) {
             const del = document.createElement('button');
             del.className = 'deleteBtn';
             del.textContent = 'Delete';
-            del.onclick = () => {
-              if (confirm('Delete this message?')) {
-                remove(ref(db, `rooms/${roomId}/comments/${key}`));
-              }
-            };
+            del.onclick = () => { if (confirm('Delete this message?')) remove(ref(db, `rooms/${id}/comments/${key}`)); };
             div.appendChild(del);
           }
           commentsDiv.appendChild(div);
         });
-        // scroll to bottom so newest visible
         commentsDiv.scrollTop = commentsDiv.scrollHeight;
       });
     }
 
-    // Send message
     sendBtn.onclick = () => {
-      if (!activeRoomId) { alert('Pick a room first (or create one)'); return; }
+      if (!activeRoomId) { alert('Pick a room first'); return; }
       const text = messageInput.value.trim();
       let name = localStorage.getItem('sigma_username') || usernameInput.value.trim();
       if (!name) { alert('Set your username first'); return; }
@@ -214,7 +215,6 @@
       }).then(() => { messageInput.value = ''; });
     };
 
-    // Save username
     saveUsernameBtn.onclick = () => {
       const n = usernameInput.value.trim();
       if (!n) { alert('Type a username'); return; }
@@ -223,22 +223,16 @@
       alert('Username saved');
     };
 
-    // Change username
     changeUsernameBtn.onclick = () => {
       usernameInput.disabled = false;
       usernameInput.focus();
-      // Do NOT remove userId so delete permissions stay the same; only name changes
       localStorage.removeItem('sigma_username');
     };
 
-    // Escape to avoid HTML injection (basic)
     function escapeHtml(s){
       if (!s) return '';
       return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
     }
-
-    // Initial: load rooms once (onValue will keep it updated). Optionally select first room automatically if exists.
-    // (onValue above already updates select).
   </script>
 </body>
-    </html>
+  </html>
