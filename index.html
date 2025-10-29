@@ -11,10 +11,10 @@
       color:white; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px;
     }
     h1{margin:6px 0 14px; text-shadow:0 0 8px rgba(0,0,0,.4)}
-    .topbar{display:flex;gap:10px; align-items:center; margin-bottom:12px}
+    .topbar{display:flex;gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap}
     .card{background:rgba(255,255,255,.06); padding:12px; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.5)}
-    #roomsRow{display:flex; gap:8px; align-items:center}
-    select, input[type="text"]{padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,.08); color:white}
+    #roomsRow{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    select, input[type="text"], input[type="color"]{padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,.08); color:white}
     button{background:var(--accent); color:white; padding:8px 10px; border:none; border-radius:8px; cursor:pointer; font-weight:600}
     button:hover{opacity:.95}
     #comments{width:100%; max-width:800px; margin-top:14px; background:rgba(255,255,255,.06); border-radius:10px; padding:12px; max-height:420px; overflow:auto; scroll-behavior: smooth;}
@@ -23,216 +23,239 @@
     .meta{font-size:12px; color:#ddd; margin-left:8px}
     .deleteBtn{position:absolute; right:10px; top:10px; background:transparent; border:none; color:#ff7675; cursor:pointer}
     .small{font-size:13px; color:#ddd}
-    .flexrow{display:flex; gap:8px; align-items:center}
     @media (max-width:520px){ .topbar{flex-direction:column; align-items:stretch} .card{width:100%} #comments{max-height:300px} }
   </style>
 </head>
 <body>
 
-  <h1>💬 Sigma Chat — Rooms</h1>
+<h1>💬 Sigma Chat — Rooms</h1>
 
-  <div class="topbar">
-    <div class="card" id="roomCard">
-      <div id="roomsRow">
-        <label class="small" for="roomsSelect">Room:</label>
-        <select id="roomsSelect">
-          <option value="">— No room selected —</option>
-        </select>
-        <input id="newRoomInput" type="text" placeholder="New room name (e.g. Chat1)">
-        <button id="createRoomBtn">Create room</button>
-      </div>
-      <div class="small" style="margin-top:8px">Active room: <span id="activeRoomName">None</span></div>
+<div class="topbar">
+  <!-- Room selection -->
+  <div class="card" id="roomCard">
+    <div id="roomsRow">
+      <label class="small" for="roomsSelect">Room:</label>
+      <select id="roomsSelect">
+        <option value="">— No room selected —</option>
+      </select>
+      <input id="newRoomInput" type="text" placeholder="New room name (e.g. Chat1)">
+      <button id="createRoomBtn">Create room</button>
     </div>
-
-    <div class="card" id="userCard">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-        <div class="small">Name:</div>
-        <input id="usernameInput" type="text" placeholder="Your name">
-        <button id="saveUsernameBtn">Save</button>
-        <button id="changeUsernameBtn">Change</button>
-      </div>
-      <div class="small" style="margin-top:8px">You can change your name anytime. Saved locally.</div>
-    </div>
+    <div class="small" style="margin-top:8px">Active room: <span id="activeRoomName">None</span></div>
   </div>
 
-  <div class="card" style="width:100%; max-width:800px; margin-bottom:8px">
+  <!-- Username -->
+  <div class="card" id="userCard">
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-      <input id="messageInput" type="text" placeholder="Type a message..." style="flex:1">
-      <button id="sendBtn">Send</button>
+      <div class="small">Name:</div>
+      <input id="usernameInput" type="text" placeholder="Your name">
+      <button id="saveUsernameBtn">Save</button>
+      <button id="changeUsernameBtn">Change</button>
     </div>
-    <div class="small" style="margin-top:8px">Selected room: <strong id="selectedRoomDisplay">—</strong></div>
+    <div class="small" style="margin-top:8px">You can change your name anytime. Saved locally.</div>
   </div>
 
-  <div id="comments" class="card"></div>
+  <!-- Gradient background picker -->
+  <div class="card" id="bgCard">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+      <div class="small">Background Gradient:</div>
+      <input type="color" id="color1" value="#6a0dad">
+      <input type="color" id="color2" value="#000000">
+      <button id="applyBgBtn">Apply</button>
+    </div>
+    <div class="small" style="margin-top:4px">Pick two colors for the gradient background.</div>
+  </div>
+</div>
 
-  <!-- Firebase + app logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+<!-- Message input -->
+<div class="card" style="width:100%; max-width:800px; margin-bottom:8px">
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+    <input id="messageInput" type="text" placeholder="Type a message..." style="flex:1">
+    <button id="sendBtn">Send</button>
+  </div>
+  <div class="small" style="margin-top:8px">Selected room: <strong id="selectedRoomDisplay">—</strong></div>
+</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
-      authDomain: "sigma-website-f2426.firebaseapp.com",
-      databaseURL: "https://sigma-website-f2426-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "sigma-website-f2426",
-      storageBucket: "sigma-website-f2426.firebasestorage.app",
-      messagingSenderId: "1030464935755",
-      appId: "1:1030464935755:web:5784435e0cfe18ba30bace",
-      measurementId: "G-1V1CJC9MHG"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+<!-- Comments -->
+<div id="comments" class="card"></div>
 
-    const roomsSelect = document.getElementById('roomsSelect');
-    const createRoomBtn = document.getElementById('createRoomBtn');
-    const newRoomInput = document.getElementById('newRoomInput');
-    const activeRoomName = document.getElementById('activeRoomName');
-    const selectedRoomDisplay = document.getElementById('selectedRoomDisplay');
+<!-- Firebase + app logic -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, child, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-    const usernameInput = document.getElementById('usernameInput');
-    const saveUsernameBtn = document.getElementById('saveUsernameBtn');
-    const changeUsernameBtn = document.getElementById('changeUsernameBtn');
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
+  authDomain: "sigma-website-f2426.firebaseapp.com",
+  databaseURL: "https://sigma-website-f2426-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sigma-website-f2426",
+  storageBucket: "sigma-website-f2426.firebasestorage.app",
+  messagingSenderId: "1030464935755",
+  appId: "1:1030464935755:web:5784435e0cfe18ba30bace",
+  measurementId: "G-1V1CJC9MHG"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const commentsDiv = document.getElementById('comments');
+// Elements
+const roomsSelect = document.getElementById('roomsSelect');
+const createRoomBtn = document.getElementById('createRoomBtn');
+const newRoomInput = document.getElementById('newRoomInput');
+const activeRoomName = document.getElementById('activeRoomName');
+const selectedRoomDisplay = document.getElementById('selectedRoomDisplay');
 
-    // ====== User local data ======
-    let username = localStorage.getItem('sigma_username') || '';
-    let userId = localStorage.getItem('sigma_userId');
-    let userColor = localStorage.getItem('sigma_userColor');
-    let lastRoom = localStorage.getItem('sigma_lastRoom');
+const usernameInput = document.getElementById('usernameInput');
+const saveUsernameBtn = document.getElementById('saveUsernameBtn');
+const changeUsernameBtn = document.getElementById('changeUsernameBtn');
 
-    if (!userId) { userId = Math.random().toString(36).slice(2,12); localStorage.setItem('sigma_userId', userId); }
-    if (!userColor) { userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'); localStorage.setItem('sigma_userColor', userColor); }
-    if (username) { usernameInput.value = username; usernameInput.disabled = true; }
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const commentsDiv = document.getElementById('comments');
 
-    const roomsRef = ref(db, 'rooms');
-    let activeRoomId = null;
-    let currentListener = null;
+const color1 = document.getElementById('color1');
+const color2 = document.getElementById('color2');
+const applyBgBtn = document.getElementById('applyBgBtn');
 
-    // Listen for rooms
-    onValue(roomsRef, snap => {
-      const val = snap.val() || {};
-      const previous = roomsSelect.value;
-      roomsSelect.innerHTML = '';
-      const opt0 = document.createElement('option');
-      opt0.value = '';
-      opt0.textContent = '— Select a room —';
-      roomsSelect.appendChild(opt0);
+// User data
+let username = localStorage.getItem('sigma_username') || '';
+let userId = localStorage.getItem('sigma_userId');
+let userColor = localStorage.getItem('sigma_userColor');
+let lastRoom = localStorage.getItem('sigma_lastRoom');
 
-      Object.keys(val).forEach(roomId => {
-        const room = val[roomId];
-        const opt = document.createElement('option');
-        opt.value = roomId;
-        opt.textContent = room.name;
-        roomsSelect.appendChild(opt);
-      });
+if (!userId) { userId = Math.random().toString(36).slice(2,12); localStorage.setItem('sigma_userId', userId); }
+if (!userColor) { userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'); localStorage.setItem('sigma_userColor', userColor); }
+if (username) usernameInput.value = username, usernameInput.disabled = true;
 
-      if (lastRoom && val[lastRoom]) {
-        roomsSelect.value = lastRoom;
-        switchRoom(lastRoom);
-      } else if (previous && val[previous]) {
-        roomsSelect.value = previous;
-        switchRoom(previous);
+// Load saved gradient
+let savedBg = localStorage.getItem('sigma_bgGradient');
+if (savedBg) {
+  document.body.style.background = savedBg;
+  const colors = savedBg.match(/#([0-9a-f]{6})/gi);
+  if (colors && colors.length>=2) color1.value = colors[0], color2.value = colors[1];
+}
+
+// Apply gradient
+applyBgBtn.onclick = () => {
+  const gradient = `linear-gradient(135deg, ${color1.value}, ${color2.value})`;
+  document.body.style.background = gradient;
+  localStorage.setItem('sigma_bgGradient', gradient);
+};
+
+// Rooms
+const roomsRef = ref(db, 'rooms');
+let activeRoomId = null;
+let currentListener = null;
+
+onValue(roomsRef, snap => {
+  const val = snap.val() || {};
+  const previous = roomsSelect.value;
+  roomsSelect.innerHTML = '';
+  const opt0 = document.createElement('option');
+  opt0.value = '';
+  opt0.textContent = '— Select a room —';
+  roomsSelect.appendChild(opt0);
+
+  Object.keys(val).forEach(id=>{
+    const room = val[id];
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = room.name;
+    roomsSelect.appendChild(opt);
+  });
+
+  if(lastRoom && val[lastRoom]) roomsSelect.value=lastRoom, switchRoom(lastRoom);
+  else if(previous && val[previous]) roomsSelect.value=previous, switchRoom(previous);
+});
+
+// Create room
+createRoomBtn.onclick = () => {
+  const name = newRoomInput.value.trim();
+  if(!name) return alert('Type a room name first');
+
+  get(roomsRef).then(snap=>{
+    const rooms = snap.val()||{};
+    const exists = Object.values(rooms).some(r=>r.name.toLowerCase()===name.toLowerCase());
+    if(exists) return alert('Room name already exists');
+    push(roomsRef,{name, time:Date.now()});
+    newRoomInput.value='';
+  });
+};
+
+roomsSelect.onchange = () => {
+  switchRoom(roomsSelect.value || null);
+};
+
+function switchRoom(id){
+  activeRoomId = id;
+  if(currentListener) currentListener();
+  commentsDiv.innerHTML='';
+  if(!id){
+    selectedRoomDisplay.textContent='—';
+    activeRoomName.textContent='None';
+    localStorage.removeItem('sigma_lastRoom');
+    return;
+  }
+  localStorage.setItem('sigma_lastRoom', id);
+  get(child(ref(db),`rooms/${id}`)).then(snap=>{
+    const r = snap.val();
+    activeRoomName.textContent = r ? r.name : id;
+    selectedRoomDisplay.textContent = r ? r.name : id;
+  });
+
+  const roomCommentsRef = ref(db, `rooms/${id}/comments`);
+  currentListener = onValue(roomCommentsRef, snap=>{
+    commentsDiv.innerHTML='';
+    const data = snap.val()||{};
+    Object.keys(data).forEach(key=>{
+      const c = data[key];
+      const div = document.createElement('div');
+      div.className='comment';
+      const timeText = c.time?new Date(c.time).toLocaleString():'';
+      div.innerHTML=`<div><span class="username" style="color:${c.color||'#fff'}">${escapeHtml(c.username)}</span> <span class="meta">${timeText}</span></div>
+                      <div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
+      if(c.userId===userId){
+        const del=document.createElement('button');
+        del.className='deleteBtn';
+        del.textContent='Delete';
+        del.onclick=()=>{ if(confirm('Delete this message?')) remove(ref(db,`rooms/${id}/comments/${key}`)); };
+        div.appendChild(del);
       }
+      commentsDiv.appendChild(div);
     });
+    commentsDiv.scrollTop = commentsDiv.scrollHeight;
+  });
+}
 
-    // Create room
-    createRoomBtn.onclick = () => {
-      const name = newRoomInput.value.trim();
-      if (!name) { alert('Type a room name first'); return; }
+// Send message
+sendBtn.onclick = () => {
+  if(!activeRoomId) return alert('Pick a room first');
+  const text = messageInput.value.trim();
+  let name = localStorage.getItem('sigma_username') || usernameInput.value.trim();
+  if(!name) return alert('Set your username first');
+  if(!text) return;
+  push(ref(db, `rooms/${activeRoomId}/comments`),{
+    username: name,
+    userId,
+    text,
+    color: userColor,
+    time: Date.now()
+  }).then(()=>messageInput.value='');
+};
 
-      get(roomsRef).then(snap => {
-        const rooms = snap.val() || {};
-        const exists = Object.values(rooms).some(r => r.name.toLowerCase() === name.toLowerCase());
-        if (exists) { alert('Room name already exists'); return; }
+// Username
+saveUsernameBtn.onclick = () => {
+  const n=usernameInput.value.trim();
+  if(!n) return alert('Type a username');
+  username = n; localStorage.setItem('sigma_username', username);
+  usernameInput.disabled=true;
+  alert('Username saved');
+};
+changeUsernameBtn.onclick = () => { usernameInput.disabled=false; usernameInput.focus(); localStorage.removeItem('sigma_username'); };
 
-        push(roomsRef, { name: name, time: Date.now() }).then(() => {
-          newRoomInput.value = '';
-        });
-      });
-    };
+// Escape
+function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+</script>
 
-    roomsSelect.onchange = () => {
-      const id = roomsSelect.value;
-      switchRoom(id || null);
-    };
-
-    function switchRoom(id) {
-      activeRoomId = id;
-      if (currentListener) currentListener(); // detach old listener
-      commentsDiv.innerHTML = '';
-      if (!id) {
-        selectedRoomDisplay.textContent = '—';
-        activeRoomName.textContent = 'None';
-        localStorage.removeItem('sigma_lastRoom');
-        return;
-      }
-      localStorage.setItem('sigma_lastRoom', id);
-      get(child(ref(db), `rooms/${id}`)).then(snap => {
-        const r = snap.val();
-        activeRoomName.textContent = r ? r.name : id;
-        selectedRoomDisplay.textContent = r ? r.name : id;
-      });
-      const roomCommentsRef = ref(db, `rooms/${id}/comments`);
-      currentListener = onValue(roomCommentsRef, snapshot => {
-        commentsDiv.innerHTML = '';
-        const data = snapshot.val() || {};
-        Object.keys(data).forEach(key => {
-          const c = data[key];
-          const div = document.createElement('div');
-          div.className = 'comment';
-          const timeText = c.time ? new Date(c.time).toLocaleString() : '';
-          div.innerHTML = `<div><span class="username" style="color:${c.color||'#fff'}">${escapeHtml(c.username)}</span> <span class="meta">${timeText}</span></div>
-                           <div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
-          if (c.userId && c.userId === userId) {
-            const del = document.createElement('button');
-            del.className = 'deleteBtn';
-            del.textContent = 'Delete';
-            del.onclick = () => { if (confirm('Delete this message?')) remove(ref(db, `rooms/${id}/comments/${key}`)); };
-            div.appendChild(del);
-          }
-          commentsDiv.appendChild(div);
-        });
-        commentsDiv.scrollTop = commentsDiv.scrollHeight;
-      });
-    }
-
-    sendBtn.onclick = () => {
-      if (!activeRoomId) { alert('Pick a room first'); return; }
-      const text = messageInput.value.trim();
-      let name = localStorage.getItem('sigma_username') || usernameInput.value.trim();
-      if (!name) { alert('Set your username first'); return; }
-      if (!text) return;
-      const roomCommentsRef = ref(db, `rooms/${activeRoomId}/comments`);
-      push(roomCommentsRef, {
-        username: name,
-        userId: userId,
-        text: text,
-        color: userColor,
-        time: Date.now()
-      }).then(() => { messageInput.value = ''; });
-    };
-
-    saveUsernameBtn.onclick = () => {
-      const n = usernameInput.value.trim();
-      if (!n) { alert('Type a username'); return; }
-      username = n; localStorage.setItem('sigma_username', username);
-      usernameInput.disabled = true;
-      alert('Username saved');
-    };
-
-    changeUsernameBtn.onclick = () => {
-      usernameInput.disabled = false;
-      usernameInput.focus();
-      localStorage.removeItem('sigma_username');
-    };
-
-    function escapeHtml(s){
-      if (!s) return '';
-      return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
-    }
-  </script>
 </body>
   </html>
