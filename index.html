@@ -1,198 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>SigmaChat v2</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Sigma Chat</title>
   <style>
-    :root { --accent: #9c27b0; --glass: rgba(255,255,255,0.08); }
     body {
-      margin:0; font-family: system-ui, Arial, sans-serif;
-      background: linear-gradient(135deg,#6a0dad,#000); color:#fff;
-      min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:20px;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(120deg, #6a0dad, #000);
+      color: white;
+      text-align: center;
+      margin: 0;
+      overflow: hidden;
     }
-    header{width:100%;max-width:1000px;display:flex;justify-content:space-between;align-items:center}
-    .card{background:var(--glass);padding:10px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
-    .controls{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;width:100%;max-width:1000px;align-items:center}
-    select,input,button{padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,0.08);color:#fff}
-    #main{width:100%;max-width:1000px;display:flex;gap:12px}
-    #left{flex:1} #right{width:260px}
-    #comments{height:420px;overflow:auto;padding:12px}
-    .bubble{padding:10px 12px;border-radius:16px;margin:8px 0;max-width:75%;display:inline-block}
-    .me{background:linear-gradient(90deg,#d0b3ff,#9c27b0);color:#000;border-bottom-right-radius:4px}
-    .other{background:rgba(255,255,255,0.12)}
-    .meta{font-size:12px;color:#ddd;margin-left:8px}
-    .avatar{display:inline-block;width:30px;height:30px;border-radius:50%;text-align:center;line-height:30px;margin-right:8px;font-size:18px}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center}
-    .modal{width:320px;background:var(--glass);padding:14px;border-radius:10px}
-    .list-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
-    @media (max-width:720px){#main{flex-direction:column}#right{width:100%}}
+    #chat-box {
+      width: 90%;
+      max-width: 600px;
+      height: 400px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 20px auto;
+    }
+    .message {
+      background: rgba(255,255,255,0.1);
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .username {
+      font-weight: bold;
+    }
+    .delete-btn {
+      color: #ff5555;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .reaction {
+      cursor: pointer;
+      margin-left: 5px;
+      font-size: 16px;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+    }
+    button { cursor: pointer; }
+    #menu { margin: 10px; }
+    #menu button {
+      margin: 5px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
   </style>
 </head>
 <body>
+  <h1>💬 Sigma Chat</h1>
 
-  <header>
-    <h2>SigmaChat v2</h2>
-    <div style="font-size:14px;color:#ddd">Firebase Realtime Chat</div>
-  </header>
-
-  <div class="controls">
-    <div class="card">
-      <label>Rooms</label>
-      <select id="roomsSelect"><option value="">— Select room —</option></select>
-      <input id="newRoomInput" placeholder="New room name" />
-      <button id="createRoomBtn">Create</button>
-    </div>
-
-    <div class="card">
-      <label>Name</label>
-      <input id="usernameInput" placeholder="Your username" />
-      <input id="emojiInput" placeholder="Emoji" style="width:80px" />
-      <button id="saveUsernameBtn">Save</button>
-    </div>
-
-    <div class="card">
-      <button id="themeBtn">🎨 Theme</button>
-      <button id="onlineBtn">👥 Online</button>
-      <button id="banlandBtn">🚫 Banland</button>
-    </div>
+  <div id="login">
+    <input id="usernameInput" placeholder="Enter username">
+    <button id="setUsernameBtn">Join Chat</button>
   </div>
 
-  <div id="main">
-    <div id="left">
-      <div class="card">
-        <input id="messageInput" style="width:75%" placeholder="Type message..." />
-        <button id="sendBtn">Send</button>
-      </div>
-      <div id="comments" class="card">
-        <div style="opacity:.7">No messages yet — select a room</div>
-      </div>
+  <div id="chat" style="display:none;">
+    <div id="menu">
+      <button id="roomsBtn">Rooms</button>
+      <button id="themeBtn">Theme</button>
+      <button id="banlandBtn">Banland</button>
+      <button id="onlineBtn">Online</button>
     </div>
-    <div id="right">
-      <div class="card"><b>Room:</b> <span id="selectedRoom">—</span></div>
-    </div>
+    <div id="chat-box"></div>
+    <input id="messageInput" placeholder="Type message...">
+    <button id="sendBtn">Send</button>
   </div>
 
-  <!-- Firebase + Chat Logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, set, remove, get, child, onDisconnect } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, remove, update } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
-      authDomain: "sigma-website-f2426.firebaseapp.com",
-      databaseURL: "https://sigma-website-f2426-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "sigma-website-f2426",
-      storageBucket: "sigma-website-f2426.appspot.com",
-      messagingSenderId: "1030464935755",
-      appId: "1:1030464935755:web:5784435e0cfe18ba30bace"
+    // 🔥 Paste your Firebase config here
+
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
+  authDomain: "sigma-website-f2426.firebaseapp.com",
+  databaseURL: "https://sigma-website-f2426-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sigma-website-f2426",
+  storageBucket: "sigma-website-f2426.firebasestorage.app",
+  messagingSenderId: "1030464935755",
+  appId: "1:1030464935755:web:5784435e0cfe18ba30bace",
+  measurementId: "G-1V1CJC9MHG"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+      // your firebase config here (the one with apiKey, authDomain, etc.)
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth();
 
-    const roomsRef = ref(db, "rooms");
-    const roomsSelect = document.getElementById("roomsSelect");
-    const commentsDiv = document.getElementById("comments");
-    const messageInput = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
+    let user = null;
+    let username = localStorage.getItem("sigma_username") || "";
+    let currentRoom = "Main";
+
+    signInAnonymously(auth);
+    onAuthStateChanged(auth, u => user = u);
+
+    const chatBox = document.getElementById("chat-box");
+    const loginDiv = document.getElementById("login");
+    const chatDiv = document.getElementById("chat");
     const usernameInput = document.getElementById("usernameInput");
-    const emojiInput = document.getElementById("emojiInput");
-    const saveUsernameBtn = document.getElementById("saveUsernameBtn");
-    const newRoomInput = document.getElementById("newRoomInput");
-    const createRoomBtn = document.getElementById("createRoomBtn");
-    const selectedRoomDisplay = document.getElementById("selectedRoom");
+    const setUsernameBtn = document.getElementById("setUsernameBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const messageInput = document.getElementById("messageInput");
 
-    let activeRoomId = null;
-
-    const USER_KEY = "sigma_user";
-    let localUser = JSON.parse(localStorage.getItem(USER_KEY) || "{}");
-    if (!localUser.userId) {
-      localUser = {
-        username: "",
-        emoji: "😎",
-        color: "#"+Math.floor(Math.random()*16777215).toString(16),
-        userId: Math.random().toString(36).slice(2,10)
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(localUser));
+    if (username) {
+      loginDiv.style.display = "none";
+      chatDiv.style.display = "block";
     }
 
-    usernameInput.value = localUser.username || "";
-    emojiInput.value = localUser.emoji || "😎";
-
-    // Load rooms
-    onValue(roomsRef, (snap)=>{
-      const val = snap.val() || {};
-      roomsSelect.innerHTML = '<option value="">— Select room —</option>';
-      for (const id in val) {
-        const opt = document.createElement("option");
-        opt.value = id;
-        opt.textContent = val[id].name || id;
-        roomsSelect.appendChild(opt);
+    setUsernameBtn.onclick = () => {
+      username = usernameInput.value.trim();
+      if (username) {
+        localStorage.setItem("sigma_username", username);
+        loginDiv.style.display = "none";
+        chatDiv.style.display = "block";
       }
-    });
-
-    // Create room
-    createRoomBtn.onclick = async ()=>{
-      const name = newRoomInput.value.trim();
-      if (!name) return alert("Enter a room name");
-      await push(roomsRef, { name, createdBy: localUser.userId, createdAt: Date.now() });
-      newRoomInput.value = "";
     };
 
-    // Join room
-    roomsSelect.onchange = async ()=>{
-      const id = roomsSelect.value;
-      if (!id) return;
-      activeRoomId = id;
-      selectedRoomDisplay.textContent = (await get(child(ref(db),`rooms/${id}/name`))).val();
-      const userRef = ref(db, `rooms/${id}/users/${localUser.userId}`);
-      await set(userRef, { username: localUser.username, emoji: localUser.emoji, color: localUser.color });
-      onDisconnect(userRef).remove();
-      listenComments();
-    };
+    function stringToColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+      return "#" + "00000".substring(0, 6 - c.length) + c;
+    }
 
-    // Save username
-    saveUsernameBtn.onclick = ()=>{
-      localUser.username = usernameInput.value.trim() || "User";
-      localUser.emoji = emojiInput.value.trim() || "🙂";
-      localStorage.setItem(USER_KEY, JSON.stringify(localUser));
-      alert("Saved!");
-    };
-
-    // Send message
-    sendBtn.onclick = async ()=>{
-      if (!activeRoomId) return alert("Select a room");
+    sendBtn.onclick = () => {
       const text = messageInput.value.trim();
-      if (!text) return;
-      await push(ref(db,`rooms/${activeRoomId}/comments`), {
-        username: localUser.username,
-        userId: localUser.userId,
-        emoji: localUser.emoji,
-        color: localUser.color,
-        text,
-        time: Date.now()
-      });
-      messageInput.value = "";
+      if (text) {
+        push(ref(db, "rooms/" + currentRoom + "/messages"), {
+          text,
+          username,
+          uid: user.uid,
+          time: Date.now(),
+          reactions: {}
+        });
+        messageInput.value = "";
+      }
     };
 
-    // Listen to messages
-    function listenComments(){
-      const cRef = ref(db, `rooms/${activeRoomId}/comments`);
-      onValue(cRef, (snap)=>{
-        const val = snap.val() || {};
-        commentsDiv.innerHTML = "";
-        Object.keys(val).forEach(cid=>{
-          const c = val[cid];
-          const div = document.createElement("div");
-          div.className = "bubble " + (c.userId===localUser.userId?"me":"other");
-          div.innerHTML = `<span class="avatar">${c.emoji}</span> <b style="color:${c.color}">${c.username}</b><br>${c.text}`;
-          commentsDiv.appendChild(div);
+    function loadMessages(room) {
+      chatBox.innerHTML = "";
+      onChildAdded(ref(db, "rooms/" + room + "/messages"), snap => {
+        const msg = snap.val();
+        const div = document.createElement("div");
+        div.classList.add("message");
+        const color = stringToColor(msg.username);
+        div.innerHTML = `<span class="username" style="color:${color}">${msg.username}:</span> ${msg.text}`;
+        
+        // 💥 Emoji reactions
+        const emojis = ["👍", "😂", "🔥", "💀", "❤️"];
+        const reactDiv = document.createElement("div");
+        emojis.forEach(e => {
+          const span = document.createElement("span");
+          span.textContent = e;
+          span.classList.add("reaction");
+          span.onclick = () => addReaction(snap.key, e);
+          reactDiv.appendChild(span);
         });
-        commentsDiv.scrollTop = commentsDiv.scrollHeight;
+        div.appendChild(reactDiv);
+
+        // 🗑️ Delete button (only for your own)
+        if (msg.uid === user.uid) {
+          const del = document.createElement("button");
+          del.textContent = "Delete";
+          del.classList.add("delete-btn");
+          del.onclick = () => remove(ref(db, "rooms/" + room + "/messages/" + snap.key));
+          div.appendChild(del);
+        }
+
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
     }
+
+    function addReaction(msgId, emoji) {
+      const msgRef = ref(db, "rooms/" + currentRoom + "/messages/" + msgId + "/reactions/" + emoji);
+      update(msgRef, { [user.uid]: true });
+    }
+
+    loadMessages(currentRoom);
   </script>
 </body>
 </html>
  
+
