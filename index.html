@@ -86,7 +86,7 @@
     import { getDatabase, ref, push, onChildAdded, remove, update } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-    // 🔥 Paste your Firebase config here//
+    // 🔥 Paste your Firebase config here
 const firebaseConfig = {
   apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
   authDomain: "sigma-website-f2426.firebaseapp.com",
@@ -98,6 +98,8 @@ const firebaseConfig = {
   measurementId: "G-1V1CJC9MHG"
 };
 
+      // your firebase config here (the one with apiKey, authDomain, etc.)
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
