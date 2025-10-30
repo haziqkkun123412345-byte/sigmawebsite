@@ -1,146 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>SigmaChat — skeleton</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sigma Chat</title>
   <style>
-    /* --- Minimal modern styling (messenger-like) --- */
-    :root { --accent: #9c27b0; --glass: rgba(255,255,255,0.06); }
     body {
-      margin:0; font-family: system-ui, Arial, sans-serif;
-      background: linear-gradient(135deg,#6a0dad,#000); color:#fff;
-      min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px;
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      color: white;
+      background: linear-gradient(135deg, #3b006a, #000000);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    header{width:100%;max-width:1000px; display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .card{background:var(--glass);padding:10px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
-    /* top controls */
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;width:100%;max-width:1000px;align-items:center}
-    select,input,button{padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,0.08);color:#fff}
-    #main{width:100%;max-width:1000px; display:flex;gap:12px;align-items:flex-start}
-    #left{flex:1} #right{width:260px}
-    #comments{height:420px; overflow:auto; padding:12px}
-    .bubble{padding:10px 12px;border-radius:16px;margin:8px 0;display:inline-block;max-width:78%;}
-    .me{background:linear-gradient(90deg,#d0b3ff,#9c27b0); color:#000; border-bottom-right-radius:4px}
-    .other{background:rgba(255,255,255,0.12)}
-    .meta{font-size:12px;color:#ddd;margin-left:8px}
-    .avatar{display:inline-block;width:30px;height:30px;border-radius:50%;text-align:center;line-height:30px;margin-right:8px;font-size:18px}
-    /* popups */
-    .overlay{position:fixed;inset:0; background:rgba(0,0,0,0.5); display:none;align-items:center;justify-content:center}
-    .modal{width:320px; background:var(--glass); padding:14px;border-radius:10px}
-    .list-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
-    .color-input{width:44px}
-    /* responsive */
-    @media (max-width:720px){ #main{flex-direction:column} #right{width:100%} }
+    header {
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #roomList {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+    }
+    .room-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .room-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    #chatContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      overflow: hidden;
+    }
+    #comments {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+    }
+    .bubble {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+    .meta {
+      opacity: 0.6;
+      font-size: 0.75em;
+      margin-left: 5px;
+    }
+    .avatar {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      border-radius: 50%;
+      text-align: center;
+      margin-right: 6px;
+      font-size: 14px;
+    }
+    #inputArea {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+    }
+    #messageInput {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+    #sendBtn, #changeName {
+      background: linear-gradient(90deg, #9c27b0, #6a00b6);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-
   <header>
-    <h2>SigmaChat (skeleton)</h2>
-    <div style="font-size:14px;color:#ddd">Public demo UI — connect your Firebase</div>
+    💬 Sigma Chat — <span id="currentRoomName">Select a room</span>
   </header>
 
-  <!-- TOP controls -->
-  <div class="controls">
-    <div class="card" style="display:flex;gap:8px;align-items:center">
-      <label>Rooms</label>
-      <select id="roomsSelect"><option value="">— Select room —</option></select>
-      <input id="newRoomInput" placeholder="New room name" />
-      <button id="createRoomBtn">Create</button>
-    </div>
+  <div id="roomList"></div>
 
-    <div class="card" style="display:flex;gap:8px;align-items:center">
-      <label>Name</label>
-      <input id="usernameInput" placeholder="Your username" />
-      <input id="emojiInput" placeholder="Emoji avatar (type one)" style="width:80px" />
-      <button id="saveUsernameBtn">Save</button>
-      <button id="changeUsernameBtn">Change</button>
-    </div>
-
-    <div class="card" style="display:flex;gap:8px;align-items:center">
-      <button id="themeBtn">🎨 Change Theme</button>
-      <button id="onlineBtn">👥 Online Users</button>
-      <button id="banlandBtn">🚫 Banland</button>
+  <div id="chatContainer">
+    <div id="comments"></div>
+    <div id="inputArea">
+      <input type="text" id="messageInput" placeholder="Type your message..." />
+      <button id="sendBtn">Send</button>
+      <button id="changeName">Change Username</button>
     </div>
   </div>
 
-  <!-- MAIN area -->
-  <div id="main">
-    <div id="left">
-      <div class="card">
-        <div style="display:flex;gap:8px">
-          <input id="messageInput" style="flex:1" placeholder="Type a message..." />
-          <button id="sendBtn">Send</button>
-        </div>
-      </div>
-
-      <div id="comments" class="card" aria-live="polite">
-        <!-- messages will appear here -->
-        <div class="small" style="opacity:.7">No messages yet — choose or create a room</div>
-      </div>
-    </div>
-
-    <div id="right">
-      <div class="card">
-        <div style="font-size:13px;color:#ddd">Selected room:</div>
-        <div id="selectedRoomDisplay" style="font-weight:700; margin-top:6px">—</div>
-      </div>
-      <div class="card" style="margin-top:10px">
-        <div style="font-size:13px;color:#ddd">Theme preview</div>
-        <div id="themePreview" style="height:80px;margin-top:8px;border-radius:8px;background:linear-gradient(135deg,#6a0dad,#000)"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Online Users popup -->
-  <div id="onlineOverlay" class="overlay">
-    <div class="modal card">
-      <h4>👥 Online Users</h4>
-      <div id="onlineList" style="max-height:240px;overflow:auto;margin-top:8px"></div>
-      <div style="text-align:right;margin-top:10px"><button id="closeOnline">Close</button></div>
-    </div>
-  </div>
-
-  <!-- Banland popup -->
-  <div id="banlandOverlay" class="overlay">
-    <div class="modal card">
-      <h4>🚫 Banland</h4>
-      <div id="banList" style="max-height:240px;overflow:auto;margin-top:8px"></div>
-      <div style="text-align:right;margin-top:10px"><button id="closeBanland">Close</button></div>
-    </div>
-  </div>
-
-  <!-- Theme picker popup -->
-  <div id="themeOverlay" class="overlay">
-    <div class="modal card">
-      <h4>🎨 Pick a theme</h4>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
-        <!-- Each box below is a preview; clicking selects -->
-        <div class="themeBox" data-css="linear-gradient(135deg,#6a0dad,#000)" style="width:70px;height:50px;border-radius:8px;background:linear-gradient(135deg,#6a0dad,#000);cursor:pointer"></div>
-        <div class="themeBox" data-css="linear-gradient(135deg,#0ea5e9,#02111b)" style="width:70px;height:50px;border-radius:8px;background:linear-gradient(135deg,#0ea5e9,#02111b);cursor:pointer"></div>
-        <div class="themeBox" data-css="linear-gradient(135deg,#ff7a18,#2a003e)" style="width:70px;height:50px;border-radius:8px;background:linear-gradient(135deg,#ff7a18,#2a003e);cursor:pointer"></div>
-        <div class="themeBox" data-css="linear-gradient(135deg,#22c55e,#08130b)" style="width:70px;height:50px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#08130b);cursor:pointer"></div>
-        <div class="themeBox" data-css="linear-gradient(135deg,#ff3cac,#1d2731)" style="width:70px;height:50px;border-radius:8px;background:linear-gradient(135deg,#ff3cac,#1d2731);cursor:pointer"></div>
-        <div class="themeBox" data-css="linear-gradient(135deg,#ffb86b,#272727)" style="width:70px;height:50px;border-radius:8px;background:linear-gradient(135deg,#ffb86b,#272727);cursor:pointer"></div>
-      </div>
-      <div style="text-align:right;margin-top:10px"><button id="closeTheme">Close</button></div>
-    </div>
-  </div>
-
-  <!-- Firebase + minimal examples -->
   <script type="module">
-    /* ============================
-       IMPORTANT:
-       - This file is a *UI skeleton* with short safe examples.
-       - Replace the firebaseConfig values with your own.
-       - Where you see "TODO: REAL-TIME LOGIC", that's where you'll add listeners (onValue, push, remove).
-    ============================ */
-
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, onDisconnect, set, child, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+    import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 
-    // ========== 1) Configure Firebase (KEEP YOUR PROJECT SETTINGS) ==========
+    // --- Firebase Configuration ---
     const firebaseConfig = {
       apiKey: "AIzaSyDgORv7p_8He7kFKmFZ2oKJqSoOYeJoKKY",
       authDomain: "sigma-website-f2426.firebaseapp.com",
@@ -149,247 +129,108 @@
       storageBucket: "sigma-website-f2426.firebasestorage.app",
       messagingSenderId: "1030464935755",
       appId: "1:1030464935755:web:5784435e0cfe18ba30bace",
+      measurementId: "G-1V1CJC9MHG"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ========= 2) Local saved user data =========
-    const USER_KEY = 'sigma_user';
-    let localUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
-    if (!localUser) {
-      // Default local user object
-      localUser = {
-        username: '',
-        userId: Math.random().toString(36).slice(2,12), // persistent id per browser
-        emoji: '😎',
-        color: '#'+Math.floor(Math.random()*16777215).toString(16)
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(localUser));
+    // --- Escape HTML ---
+    function escapeHtml(t) {
+      return t.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;',
+        '"': '&quot;', "'": '&#039;'
+      }[m]));
     }
 
-    // UI references
-    const roomsSelect = document.getElementById('roomsSelect');
-    const createRoomBtn = document.getElementById('createRoomBtn');
-    const newRoomInput = document.getElementById('newRoomInput');
-    const usernameInput = document.getElementById('usernameInput');
-    const emojiInput = document.getElementById('emojiInput');
-    const saveUsernameBtn = document.getElementById('saveUsernameBtn');
-    const changeUsernameBtn = document.getElementById('changeUsernameBtn');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const commentsDiv = document.getElementById('comments');
-    const selectedRoomDisplay = document.getElementById('selectedRoomDisplay');
+    // --- Local user (saved forever) ---
+    let localUser = JSON.parse(localStorage.getItem("chatUser")) || null;
 
-    // Overlays
-    const onlineOverlay = document.getElementById('onlineOverlay');
-    const onlineList = document.getElementById('onlineList');
-    const closeOnline = document.getElementById('closeOnline');
-    const banlandOverlay = document.getElementById('banlandOverlay');
-    const banList = document.getElementById('banList');
-    const closeBanland = document.getElementById('closeBanland');
-    const themeOverlay = document.getElementById('themeOverlay');
-    const themeBoxes = document.querySelectorAll('.themeBox');
-    const themePreview = document.getElementById('themePreview');
-    const themeBtn = document.getElementById('themeBtn');
+    function saveUser(name, color, emoji) {
+      localUser = { username: name, color, emoji, userId: localUser?.userId || Date.now().toString() };
+      localStorage.setItem("chatUser", JSON.stringify(localUser));
+    }
 
-    // initialize UI from local user
-    usernameInput.value = localUser.username || '';
-    emojiInput.value = localUser.emoji || '😎';
-    themePreview.style.background = localStorage.getItem('sigma_theme') || 'linear-gradient(135deg,#6a0dad,#000)';
+    if (!localUser) {
+      const name = prompt("Enter your username:");
+      const color = "#" + Math.floor(Math.random()*16777215).toString(16);
+      const emoji = "🙂";
+      saveUser(name || "Anonymous", color, emoji);
+    }
 
-    // ========== 3) Database structure (recommended)
-    /* 
-      /rooms
-        /{roomId}
-          name: "Chat1"
-          createdBy: userId
-          createdAt: timestamp
-          banned: { userId: true, ... }
-          users: { userId: { username, emoji, color, lastSeen } }
-          comments:
-            {commentId}: { username, userId, emoji, color, text, time, welcome: true/false }
-    */
-
-    // ========== 4) Rooms list (example: read once + keep updated) ==========
-    const roomsRef = ref(db, 'rooms');
-    onValue(roomsRef, (snap) => {
-      const val = snap.val() || {};
-      // rebuild select
-      const cur = roomsSelect.value;
-      roomsSelect.innerHTML = '';
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = '— Select room —';
-      roomsSelect.appendChild(placeholder);
-      Object.keys(val).forEach(rid => {
-        const opt = document.createElement('option');
-        opt.value = rid;
-        opt.textContent = val[rid].name || rid;
-        roomsSelect.appendChild(opt);
-      });
-      // try to reselect previous
-      if (cur) roomsSelect.value = cur;
+    // --- Change username ---
+    document.getElementById("changeName").addEventListener("click", () => {
+      const name = prompt("Enter new username:");
+      if (name) {
+        saveUser(name, localUser.color, localUser.emoji);
+        alert("Username updated!");
+      }
     });
 
-    // create room (simple)
-    createRoomBtn.onclick = async () => {
-      const name = newRoomInput.value.trim();
-      if (!name) return alert('Type a room name');
-      // push a new room object; the returned key is the roomId
-      const pushed = await push(ref(db, 'rooms'), { name, createdBy: localUser.userId, createdAt: Date.now() });
-      newRoomInput.value = '';
-      // NOTE: after this you may auto-select the new room (get pushed.key)
-    };
+    // --- Elements ---
+    const roomList = document.getElementById("roomList");
+    const commentsDiv = document.getElementById("comments");
+    const sendBtn = document.getElementById("sendBtn");
+    const msgInput = document.getElementById("messageInput");
+    const roomsRef = ref(db, "rooms");
 
-    // ========== 5) When user selects a room (join logic skeleton) ==========
-    let activeRoomId = null;
-    roomsSelect.onchange = async () => {
-      const id = roomsSelect.value;
-      if (!id) { activeRoomId = null; selectedRoomDisplay.textContent = '—'; commentsDiv.innerHTML = ''; return; }
-      // Before joining, check if banned:
-      const bannedSnap = await get(child(ref(db), `rooms/${id}/banned/${localUser.userId}`));
-      if (bannedSnap.exists()) {
-        alert('You are banned from this room.');
-        roomsSelect.value = '';
-        return;
-      }
+    // --- Load rooms ---
+    onValue(roomsRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      roomList.innerHTML = "";
+      Object.keys(data).forEach((id) => {
+        const btn = document.createElement("button");
+        btn.textContent = data[id].name;
+        btn.className = "room-btn";
+        btn.onclick = () => openRoom(id, data[id]);
+        roomList.appendChild(btn);
+      });
+    });
 
-      activeRoomId = id;
-      selectedRoomDisplay.textContent = (await get(child(ref(db), `rooms/${id}/name`))).val() || id;
+    // --- Open a room ---
+    let currentRoomId = null;
+    function openRoom(id, info) {
+      currentRoomId = id;
+      document.getElementById("currentRoomName").textContent = info.name;
+      commentsDiv.innerHTML = "";
 
-      // Add presence entry for this user (presence uses users list inside the room)
-      const myUserRef = ref(db, `rooms/${id}/users/${localUser.userId}`);
-      // set initial presence info
-      await set(myUserRef, { username: localUser.username, emoji: localUser.emoji, color: localUser.color, lastSeen: Date.now() });
+      const commentsRef = ref(db, `rooms/${id}/comments`);
+      onValue(commentsRef, (snap) => {
+        const val = snap.val() || {};
+        commentsDiv.innerHTML = "";
+        Object.keys(val).forEach(cid => {
+          const c = val[cid];
+          const div = document.createElement("div");
+          div.className = "bubble";
+          div.style.background = c.userId === localUser.userId
+            ? "linear-gradient(90deg,#d0b3ff,#9c27b0)"
+            : "rgba(255,255,255,0.12)";
+          div.innerHTML = `
+            <span class="avatar" style="background:${c.color || "#666"}">${c.emoji || "🙂"}</span>
+            <strong style="color:${c.color}">${escapeHtml(c.username || "Anonymous")}</strong>
+            <span class="meta">${new Date(c.time).toLocaleTimeString()}</span><br>
+            ${escapeHtml(c.text)}
+          `;
+          commentsDiv.appendChild(div);
+          commentsDiv.scrollTop = commentsDiv.scrollHeight;
+        });
+      });
+    }
 
-      // Ensure onDisconnect removes this user entry (so they go offline automatically)
-      onDisconnect(myUserRef).remove();
-
-      // TODO: Add a "welcome" message:
-      // push(ref(db, `rooms/${id}/comments`), { username: localUser.username, userId: localUser.userId, emoji: localUser.emoji, text: `${localUser.username} joined the room`, time: Date.now(), welcome: true });
-
-      // TODO: Start listening to comments for this room and render them.
-      // SAFE EXAMPLE: use onValue(ref(db, `rooms/${id}/comments`), snap => { render messages... })
-      // (Don't paste a full render loop here — implement in your app where you handle sanitization & moderation.)
-    };
-
-    // ========== 6) Send message skeleton (safe example) ==========
-    sendBtn.onclick = async () => {
-      if (!activeRoomId) return alert('Choose a room first.');
-      const text = messageInput.value.trim();
-      if (!text) return;
-      // moderation checks (client-side quick checks; server-side rules required too)
-      if (text.length > 1000) return alert('Message too long.');
-      // TODO: call a moderation function here (profanity or spam check)
-      // push message to database (short safe example)
-      await push(ref(db, `rooms/${activeRoomId}/comments`), {
+    // --- Send message ---
+    sendBtn.addEventListener("click", () => {
+      const text = msgInput.value.trim();
+      if (!text || !currentRoomId) return;
+      push(ref(db, `rooms/${currentRoomId}/comments`), {
         username: localUser.username,
-        userId: localUser.userId,
-        emoji: localUser.emoji,
         color: localUser.color,
+        emoji: localUser.emoji,
+        userId: localUser.userId,
         text,
         time: Date.now()
       });
-      messageInput.value = '';
-    };
-
-    // ========== 7) Online users popup (UI update example) ==========
-    document.getElementById('onlineBtn').onclick = async () => {
-      if (!activeRoomId) return alert('Pick a room first');
-      // fetch realtime users list for the room
-      const usersRef = ref(db, `rooms/${activeRoomId}/users`);
-      onValue(usersRef, snap => {
-        const val = snap.val() || {};
-        onlineList.innerHTML = '';
-        Object.keys(val).forEach(uid => {
-          const u = val[uid];
-          const item = document.createElement('div');
-          item.className = 'list-item';
-          const left = document.createElement('div');
-          left.style.display = 'flex'; left.style.alignItems = 'center';
-          const av = document.createElement('div'); av.className = 'avatar'; av.textContent = u.emoji || '🙂'; av.style.background = u.color || '#666';
-          left.appendChild(av);
-          const name = document.createElement('div'); name.innerHTML = `<strong>${escapeHtml(u.username||'Anonymous')}</strong> <div class="small meta">${uid === (await get(child(ref(db), `rooms/${activeRoomId}/createdBy`))).val() ? '👑 admin' : ''}</div>`;
-          left.appendChild(name);
-          item.appendChild(left);
-
-          // If current local user is the room admin, show kick/ban buttons
-          // You must check admin status safely via db read (not trusting client)
-          // Here is a UI example only:
-          // if (localUser.userId === roomCreatedBy) { create kick/ban buttons that call server logic }
-          onlineList.appendChild(item);
-        });
-      });
-
-      onlineOverlay.style.display = 'flex';
-    };
-    closeOnline.onclick = () => onlineOverlay.style.display = 'none';
-
-    // ========== 8) Banland popup (admin-only) ==========
-    document.getElementById('banlandBtn').onclick = async () => {
-      if (!activeRoomId) return alert('Pick a room first');
-      // fetch banned list and show (example)
-      const bSnap = await get(child(ref(db), `rooms/${activeRoomId}/banned`));
-      const banned = bSnap.val() || {};
-      banList.innerHTML = '';
-      Object.keys(banned).forEach(uid => {
-        const row = document.createElement('div');
-        row.className = 'list-item';
-        row.textContent = uid + " (banned)";
-        // If you're admin, add Unban button (UI example)
-        const un = document.createElement('button'); un.textContent = 'Unban';
-        un.onclick = async () => {
-          // remove ban entry
-          await remove(ref(db, `rooms/${activeRoomId}/banned/${uid}`));
-          alert('Unbanned ' + uid);
-        };
-        row.appendChild(un);
-        banList.appendChild(row);
-      });
-      banlandOverlay.style.display = 'flex';
-    };
-    closeBanland.onclick = () => banlandOverlay.style.display = 'none';
-
-    // ========== 9) Theme picker UI ==========
-    themeBtn.onclick = () => themeOverlay.style.display = 'flex';
-    document.getElementById('closeTheme').onclick = () => themeOverlay.style.display = 'none';
-    themeBoxes.forEach(box => {
-      box.onclick = () => {
-        const css = box.getAttribute('data-css');
-        document.body.style.background = css;
-        localStorage.setItem('sigma_theme', css);
-        themePreview.style.background = css;
-      };
+      msgInput.value = "";
     });
-
-    // ========== 10) Username save/change ==========
-    saveUsernameBtn.onclick = () => {
-      const name = usernameInput.value.trim();
-      const emoji = emojiInput.value.trim() || '🙂';
-      if (!name) return alert('Type a name');
-      localUser.username = name; localUser.emoji = emoji;
-      localStorage.setItem(USER_KEY, JSON.stringify(localUser));
-      alert('Saved locally');
-      // Optionally update presence if already in a room (update /rooms/{id}/users/{userId})
-    };
-    changeUsernameBtn.onclick = () => {
-      usernameInput.disabled = false;
-      localStorage.removeItem(USER_KEY);
-    };
-
-    // ========== Utility: basic escaping ==========
-    function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-
-    /* ========= Notes & TODOs (where to extend) =========
-      • TODO REAL-TIME LOGIC: replace the TODO sections with real onValue listeners that render messages.
-      • Moderation: always run server-side checks (Cloud Functions) before allowing writes that create public content,
-        or use Firebase rules that check auth + server-signed tokens for privileged actions (ban/kick).
-      • Presence: we added an onDisconnect example (myUserRef + onDisconnect(myUserRef).remove())
-      • Bans: set /rooms/{roomId}/banned/{userId} = { by: adminId, at: timestamp, reason }
-      • Admin: set rooms/{roomId}/createdBy = userId at creation time. Check it before performing admin actions.
-      • Profanity & spam: check via Cloud Function + 3rd-party moderation API (Perspective / custom list).
-    */
-
   </script>
 </body>
-  </html>
+</html>
